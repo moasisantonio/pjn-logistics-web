@@ -1,0 +1,56 @@
+datasource db {
+  provider = "postgresql" // Ubah ke "mysql" jika menggunakan MySQL/XAMPP
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum DeviceCondition {
+  NEW
+  SECOND
+  DAMAGED
+}
+
+enum DeviceStatus {
+  IN_STOCK
+  DEPLOYED
+  RETURNED
+  SCRAP
+}
+
+model Device {
+  id           Int             @id @default(autoincrement())
+  serialNumber String          @unique @map("serial_number")
+  parentSn     String?         @map("parent_sn")
+  brandType    String          @map("brand_type")
+  poNumber     String?         @map("po_number")
+  doNumber     String?         @map("do_number")
+  condition    DeviceCondition @default(SECOND)
+  status       DeviceStatus    @default(IN_STOCK)
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  workOrders   WorkOrder[]
+
+  @@map("devices")
+}
+
+model WorkOrder {
+  id              Int      @id @default(autoincrement())
+  formNumber      String   @map("form_number")
+  ticketNumber    String?  @map("ticket_number")
+  transactionDate DateTime @map("transaction_date")
+  deviceId        Int      @map("device_id")
+  customerCode    String?  @map("customer_code")
+  areaName        String?  @map("area_name")
+  receiverTech    String?  @map("receiver_tech")
+  fieldTech       String?  @map("field_tech")
+  actionType      String   @map("action_type")
+  notes           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  device          Device   @relation(fields: [deviceId], references: [id])
+
+  @@map("work_orders")
+}
