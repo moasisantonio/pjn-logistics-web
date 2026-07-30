@@ -5,7 +5,7 @@ require('dotenv').config();
 // ==========================================
 // IMPOR RUTE MODUL APLIKASI
 // ==========================================
-const apiRoutes = require('./routes/api'); // Rute Auth Login & RBAC (Teknisi, Logistik, Super Admin)
+const apiRoutes = require('./routes/api');
 const deviceRoutes = require('./routes/deviceRoutes');
 const workOrderRoutes = require('./routes/workOrderRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
@@ -20,7 +20,7 @@ const PORT = process.env.PORT || 5000;
 // Izinkan akses Cross-Origin Resource Sharing (CORS)
 app.use(cors());
 
-// Body parser WAJIB dipanggil sebelum registrasi rute API
+// Body parser WAJIB dipanggil SEBELUM pendaftaran rute API
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -42,7 +42,7 @@ app.get('/', (req, res) => {
 // Endpoint Login & Pengujian Hak Akses Role (RBAC)
 app.use('/api', apiRoutes);
 
-// Endpoint Manajemen & Scan Perangkat/Modem
+// Endpoint Manajemen & Import Excel Modem/Perangkat
 app.use('/api/devices', deviceRoutes);
 
 // Endpoint Work Order / Pekerjaan Teknisi
@@ -79,7 +79,6 @@ app.use((err, req, res, next) => {
 
 // ==========================================
 // 6. PROCESS ERROR LISTENERS
-// (Menangkap error tersembunyi agar server tidak 'clean exit')
 // ==========================================
 process.on('unhandledRejection', (reason, promise) => {
   console.error('💥 Unhandled Rejection pada Promise:', promise, 'alasan:', reason);
