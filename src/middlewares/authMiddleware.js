@@ -1,4 +1,4 @@
-// middlewares/authMiddleware.js
+// src/middlewares/authMiddleware.js
 const jwt = require('jsonwebtoken');
 
 // 1. Verifikasi Token Login
@@ -11,8 +11,11 @@ const verifyToken = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // Berisi: { id, username, role }
+    // Tambahkan fallback key agar selalu sama dengan yang ada di rute login
+    const secretKey = process.env.JWT_SECRET || 'secret_key_pjn_logistics_2026';
+    const decoded = jwt.verify(token, secretKey);
+    
+    req.user = decoded; // Berisi: { username, role }
     next();
   } catch (err) {
     return res.status(403).json({ message: 'Token tidak valid atau expired.' });

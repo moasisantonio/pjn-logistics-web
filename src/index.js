@@ -2,7 +2,10 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-// Impor Rute Utama Modul Aplikasi
+// ==========================================
+// IMPOR RUTE MODUL APLIKASI
+// ==========================================
+const apiRoutes = require('./routes/api'); // Rute Auth Login & RBAC (Teknisi, Logistik, Super Admin)
 const deviceRoutes = require('./routes/deviceRoutes');
 const workOrderRoutes = require('./routes/workOrderRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
@@ -14,16 +17,11 @@ const PORT = process.env.PORT || 5000;
 // ==========================================
 // 1. MIDDLEWARE GLOBAL
 // ==========================================
-// Izinkan akses Cross-Origin Resource Sharing (CORS) dari frontend/web
+// Izinkan akses Cross-Origin Resource Sharing (CORS)
 app.use(cors());
 
-// ... di bagian API Routes:
-app.use('/api/reports', reportRoutes);
-
-// Middleware untuk membaca request body berformat JSON
+// Body parser WAJIB dipanggil sebelum registrasi rute API
 app.use(express.json());
-
-// Middleware untuk membaca urlencoded data jika ada pengiriman form
 app.use(express.urlencoded({ extended: true }));
 
 // ==========================================
@@ -41,14 +39,20 @@ app.get('/', (req, res) => {
 // ==========================================
 // 3. REGISTRASI API ROUTES
 // ==========================================
-// Endpoint Manajemen & Scan Modem/Perangkat Network (/api/devices)
+// Endpoint Login & Pengujian Hak Akses Role (RBAC)
+app.use('/api', apiRoutes);
+
+// Endpoint Manajemen & Scan Perangkat/Modem
 app.use('/api/devices', deviceRoutes);
 
-// Endpoint Transaksi & Log Pekerjaan Teknisi (/api/work-orders)
+// Endpoint Work Order / Pekerjaan Teknisi
 app.use('/api/work-orders', workOrderRoutes);
 
-// Endpoint Statistik & Ringkasan Dashboard Control Center (/api/dashboard)
+// Endpoint Ringkasan Dashboard Control Center
 app.use('/api/dashboard', dashboardRoutes);
+
+// Endpoint Laporan PDF & Excel
+app.use('/api/reports', reportRoutes);
 
 // ==========================================
 // 4. HANDLING ROUTE 404 (NOT FOUND)
@@ -74,12 +78,33 @@ app.use((err, req, res, next) => {
 });
 
 // ==========================================
-// 6. SERVER INITIALIZATION
+// 6. PROCESS ERROR LISTENERS
+// (Menangkap error tersembunyi agar server tidak 'clean exit')
 // ==========================================
-app.listen(PORT, () => {
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 Unhandled Rejection pada Promise:', promise, 'alasan:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('💥 Uncaught Exception terdeteksi:', err.message);
+  console.error(err.stack);
+});
+
+// ==========================================
+// 7. INISIALISASI SERVER LISTENING
+// ==========================================
+const server = app.listen(PORT, () => {
   console.log('==================================================');
   console.log(`🚀 PJN LOGISTICS API SERVER BERJALAN`);
   console.log(`📡 URL API : http://localhost:${PORT}`);
   console.log(`📅 TIME    : ${new Date().toLocaleString('id-ID')}`);
   console.log('==================================================');
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`💥 Port ${PORT} sedang digunakan oleh proses lain!`);
+  } else {
+    console.error('💥 Error saat menjalankan server:', err.message);
+  }
 });
