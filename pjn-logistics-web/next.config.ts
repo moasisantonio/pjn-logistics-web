@@ -1,9 +1,9 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  output: "export", // <-- Tambahkan/ubah baris ini
+  output: 'export',
   images: {
-    unoptimized: true, // Wajib diaktifkan jika menggunakan output 'export'
+    unoptimized: true,
   },
 };
 
