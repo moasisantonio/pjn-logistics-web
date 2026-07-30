@@ -15,14 +15,47 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ==========================================
-// 1. MIDDLEWARE GLOBAL
+// 0. TRUST PROXY (Penting untuk SSL / Cloudflare / Nginx)
 // ==========================================
-// Izinkan akses Cross-Origin Resource Sharing (CORS)
-app.use(cors());
+app.set('trust proxy', 1);
+
+// ==========================================
+// 1. MIDDLEWARE GLOBAL (CORS & BODY PARSER)
+// ==========================================
+// Konfigurasi CORS Komprehensif untuk Frontend & Production
+const allowedOrigins = [
+  'https://proxinet.store',
+  'http://proxinet.store',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5000'
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Izinkan request tanpa origin (seperti Postman, cURL, atau mobile app)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        // Izinkan subdomain wildcard jika ada (contoh: app.proxinet.store)
+        if (origin.endsWith('.proxinet.store')) {
+          callback(null, true);
+        } else {
+          callback(new Error(`CORS Error: Origin '${origin}' tidak diizinkan.`));
+        }
+      }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    credentials: true,
+    optionsSuccessStatus: 200
+  })
+);
 
 // Body parser WAJIB dipanggil SEBELUM pendaftaran rute API
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // ==========================================
 // 2. HEALTH CHECK & ROOT ENDPOINT
@@ -32,6 +65,7 @@ app.get('/', (req, res) => {
     success: true,
     message: 'PJN Logistics API Server is Running',
     version: '1.0.0',
+    protocol: req.protocol,
     timestamp: new Date().toISOString()
   });
 });
@@ -68,8 +102,16 @@ app.use((req, res, next) => {
 // 5. GLOBAL ERROR HANDLING MIDDLEWARE
 // ==========================================
 app.use((err, req, res, next) => {
-  console.error('💥 Server Error Unhandled Exception:', err.stack);
-  
+  console.error('💥 Server Error Unhandled Exception:', err.stack || err.message);
+
+  // Tangkap spesifik CORS error agar tidak crash
+  if (err.message && err.message.startsWith('CORS Error')) {
+    return res.status(403).json({
+      success: false,
+      error: err.message
+    });
+  }
+
   return res.status(err.status || 500).json({
     success: false,
     error: err.message || 'Terjadi kesalahan internal pada server.',
